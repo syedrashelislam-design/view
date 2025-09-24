@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="bn" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+  <title>DeviceHub Pro - Compact Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  
+  <style>
+    /* --- Google Fonts --- */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+
+    /* --- Compact Color Palette --- */
+    :root {
+      --bg: #0d1117; --surface: #161b22; --surface2: #21262d;
+      --heading: #e6edf3; --muted: #8b949e; 
+      --accent-solid: #38bdf8;
+      --accent-gradient: linear-gradient(45deg, #38bdf8, #818cf8);
+      --danger: #f87171; --ok: #4ade80; --warning: #facc15;
+      --shadow: 0 5px 15px rgba(0,0,0,.25);
+      --border: rgba(229, 231, 235, 0.1);
+      --chip: #30363d;
+      --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    html[data-theme="light"] {
+      --bg: #f6f8fa; --surface: #ffffff; --surface2: #f0f3f6;
+      --heading: #1f2328; --muted: #57606a; 
+      --accent-solid: #0969da;
+      --accent-gradient: linear-gradient(45deg, #2563eb, #4f46e5);
+      --danger: #d93a4A; --ok: #1a7f37; --warning: #f59e0b;
+      --shadow: 0 4px 12px rgba(16,24,40,.06);
+      --border: #d0d7de;
+      --chip: #eef2ff;
+    }
+
+    /* --- Base & Reset --- */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; font-size: 14px; }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg); color: var(--heading);
+      line-height: 1.5; min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* --- Compact Header --- */
+    header {
+      position: sticky; top: 0; z-index: 100;
+      padding: 12px 10px 6px;
+      background: color-mix(in srgb, var(--bg) 90%, transparent);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    }
+    
+    .compact-hero {
+      width: min(1000px, 95vw); margin: 0 auto;
+      display: flex; gap: 10px; flex-direction: column;
+    }
+    
+    .compact-brand {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 0;
+    }
+    
+    .brand-logo {
+      display: flex; align-items: center; gap: 8px;
+      font-weight: 900; letter-spacing: .5px;
+    }
+    .brand-logo i { 
+      font-size: 1.5rem; 
+      background: var(--accent-gradient); 
+      -webkit-background-clip: text; 
+      -webkit-text-fill-color: transparent;
+    }
+    .brand-name { font-size: 1.4rem; }
+    .brand-pro { 
+      background: var(--accent-gradient); 
+      -webkit-background-clip: text; 
+      -webkit-text-fill-color: transparent;
+      margin-left: 4px;
+    }
+    
+    .compact-controls {
+      display: flex; align-items: center; gap: 8px;
+    }
+    
+    .compact-status {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.85rem;
+    }
+    
+    .status-item {
+      padding: 5px 10px; border: 1px solid var(--border);
+      border-radius: 12px; font-weight: 600; background: var(--surface2);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .status-item.ok i { color: var(--ok); }
+    .status-item.warning i { color: var(--warning); }
+    .status-item.error i { color: var(--danger); }
+    
+    /* --- Compact Navigation --- */
+    .compact-nav {
+      display: flex; gap: 6px; margin-top: 6px;
+    }
+    
+    .nav-tab {
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--heading); padding: 8px 14px; border-radius: 10px;
+      cursor: pointer; font-weight: 600; transition: var(--transition);
+      display: flex; align-items: center; gap: 6px; font-size: 0.85rem;
+      flex: 1; justify-content: center;
+    }
+    .nav-tab:hover { background: var(--surface); }
+    .nav-tab.active {
+      background: var(--accent-gradient); color: #fff;
+      border-color: transparent;
+      box-shadow: 0 2px 8px color-mix(in srgb, var(--accent-solid) 30%, transparent);
+    }
+
+    /* --- Compact Toolbar --- */
+    .compact-toolbar {
+      width: min(1000px, 95vw); margin: 12px auto 8px;
+      display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+    }
+    
+    .compact-search {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 8px 12px; 
+      display: flex; align-items: center; gap: 8px; flex: 1;
+      min-width: 200px;
+    }
+    .compact-search input { 
+      flex: 1; border: none; outline: none; 
+      background: transparent; color: var(--heading); 
+      font-size: 0.85rem;
+    }
+    .compact-search input::placeholder { color: var(--muted); }
+    
+    .compact-select {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 8px 10px; 
+      color: var(--heading); font-size: 0.85rem;
+      cursor: pointer;
+    }
+    
+    .compact-btn-group {
+      display: flex; gap: 6px; margin-left: auto;
+    }
+    
+    .icon-btn-sm {
+      width: 36px; height: 36px; border-radius: 8px;
+      border: none; cursor: pointer; display: flex;
+      align-items: center; justify-content: center;
+      color: white; font-size: 0.9rem;
+      transition: var(--transition);
+      position: relative;
+    }
+    .icon-btn-sm.copy { background: linear-gradient(to bottom, #60a5fa, #2563eb); }
+    .icon-btn-sm.delete { background: linear-gradient(to bottom, #f87171, #ef4444); }
+    .icon-btn-sm.refresh { background: linear-gradient(to bottom, #fbbf24, #f59e0b); }
+    .icon-btn-sm.theme { background: linear-gradient(to bottom, #94a3b8, #475569); }
+    .icon-btn-sm.select { background: linear-gradient(to bottom, #34d399, #059669); }
+    
+    .icon-btn-sm:hover { transform: translateY(-1px); filter: brightness(1.1); }
+    .icon-btn-sm:active { transform: translateY(1px); }
+    
+    .selection-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 10px; border-radius: 10px; font-weight: 600;
+      font-size: 0.8rem; color: #fff; 
+      background: var(--accent-gradient);
+    }
+
+    /* --- Compact Cards --- */
+    .compact-container {
+      width: min(1000px, 95vw); margin: 8px auto;
+      display: grid; grid-template-columns: 1fr; gap: 12px;
+    }
+    
+    @media (min-width: 768px) { 
+      .compact-container { grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); } 
+    }
+
+    .compact-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 0; overflow: hidden;
+      box-shadow: var(--shadow); transition: var(--transition);
+      position: relative;
+    }
+    .compact-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,.3); }
+
+    .compact-card::before {
+        content: ''; position: absolute; top: 0; left: 0; right: 0;
+        height: 3px; background: var(--accent-gradient); opacity: 0.7;
+    }
+
+    .card-header-sm {
+      padding: 10px 12px; display: flex;
+      align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .card-left {
+      display: flex; align-items: center; gap: 10px;
+    }
+    
+    .compact-checkbox {
+      width: 18px; height: 18px; border-radius: 4px;
+      border: 2px solid var(--border); background: var(--surface2);
+      position: relative; cursor: pointer; transition: var(--transition);
+      flex-shrink: 0;
+    }
+    .compact-checkbox:hover { border-color: var(--accent-solid); }
+    .compact-checkbox.checked {
+      background: var(--accent-gradient); border-color: transparent;
+    }
+    .compact-checkbox.checked::after {
+      content: "✓"; position: absolute; color: white;
+      font-size: 10px; font-weight: bold; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    
+    .sender-info { display: flex; flex-direction: column; }
+    .sender-name { 
+      font-weight: 600; font-size: 0.9rem; 
+      display: flex; align-items: center; gap: 6px;
+    }
+    .timestamp { 
+      font-size: 0.75rem; color: var(--muted); 
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+    }
+    
+    .new-indicator {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--accent-solid); display: inline-block;
+      margin-left: 6px; animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    
+    .delete-btn-sm {
+      background: transparent; color: var(--muted); 
+      border: 1px solid var(--border); width: 28px; height: 28px;
+      border-radius: 6px; cursor: pointer; display: flex;
+      align-items: center; justify-content: center;
+      transition: var(--transition); font-size: 0.8rem;
+    }
+    .delete-btn-sm:hover { 
+      background: color-mix(in srgb, var(--danger) 15%, transparent); 
+      color: var(--danger); border-color: var(--danger);
+    }
+    
+    .card-body-sm { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+    
+    .message-preview {
+      font-size: 0.85rem; line-height: 1.4;
+      background: var(--surface2); padding: 8px 10px;
+      border-radius: 8px; border: 1px solid var(--border);
+      max-height: 60px; overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    
+    .message-preview.expanded {
+      max-height: none;
+      -webkit-line-clamp: unset;
+      overflow: auto;
+    }
+    
+    .message-meta {
+      display: flex; justify-content: space-between;
+      font-size: 0.75rem; color: var(--muted);
+    }
+    
+    .expand-btn {
+      background: transparent; border: none; color: var(--muted);
+      cursor: pointer; font-size: 0.75rem;
+      display: flex; align-items: center; gap: 4px;
+      transition: var(--transition);
+    }
+    .expand-btn:hover { color: var(--accent-solid); }
+    
+    /* --- Device Cards --- */
+    .device-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 12px; 
+      display: flex; gap: 12px; align-items: center;
+      transition: var(--transition);
+    }
+    .device-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,.3); }
+    
+    .device-icon {
+      width: 40px; height: 40px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem; color: white;
+    }
+    .device-icon.online { background: linear-gradient(to bottom, #4ade80, #16a34a); }
+    .device-icon.charging { background: linear-gradient(to bottom, #38bdf8, #0ea5e9); }
+    .device-icon.offline { background: linear-gradient(to bottom, #94a3b8, #64748b); }
+    
+    .device-details { flex-grow: 1; }
+    .device-name { font-weight: 600; font-size: 0.9rem; }
+    .device-id { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+    
+    .device-status {
+      display: flex; flex-direction: column; align-items: flex-end;
+      gap: 4px;
+    }
+    .status-badge {
+      padding: 4px 8px; border-radius: 8px; font-size: 0.7rem;
+      font-weight: 600;
+    }
+    .status-badge.online { background: color-mix(in srgb, var(--ok) 15%, transparent); color: var(--ok); }
+    .status-badge.charging { background: color-mix(in srgb, var(--accent-solid) 15%, transparent); color: var(--accent-solid); }
+    .status-badge.offline { background: color-mix(in srgb, var(--muted) 15%, transparent); color: var(--muted); }
+    
+    .connection-info {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 0.75rem;
+    }
+    .connection-type {
+      padding: 2px 6px; border-radius: 6px; font-size: 0.65rem;
+      font-weight: 600;
+    }
+    .connection-type.wifi { background: color-mix(in srgb, var(--ok) 15%, transparent); color: var(--ok); }
+    .connection-type.cellular { background: color-mix(in srgb, var(--accent-solid) 15%, transparent); color: var(--accent-solid); }
+    .connection-type.none { background: color-mix(in srgb, var(--muted) 15%, transparent); color: var(--muted); }
+    
+    .battery-info {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 0.75rem;
+    }
+    .battery-bar {
+      width: 40px; height: 6px; border-radius: 3px;
+      background: color-mix(in srgb, var(--muted) 20%, transparent);
+      overflow: hidden;
+    }
+    .battery-fill {
+      height: 100%; background: var(--ok); transition: width 0.3s;
+      border-radius: 3px;
+    }
+    .battery-fill.low { background: var(--danger); }
+    .battery-fill.medium { background: var(--warning); }
+
+    /* --- Empty State --- */
+    .empty-state {
+      background: var(--surface); border: 1px dashed var(--border);
+      border-radius: 12px; padding: 30px; text-align: center;
+      color: var(--muted); display: flex; flex-direction: column;
+      align-items: center; gap: 12px; grid-column: 1 / -1;
+    }
+    .empty-state i { font-size: 2rem; color: var(--muted); }
+
+    /* --- Compact Footer --- */
+    .compact-footer {
+      width: min(1000px, 95vw); margin: 16px auto 8px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 10px;
+    }
+    
+    .page-controls {
+      display: flex; align-items: center; gap: 8px;
+    }
+    
+    .page-btn {
+      padding: 6px 10px; border: 1px solid var(--border);
+      border-radius: 8px; background: var(--surface);
+      cursor: pointer; font-size: 0.8rem; font-weight: 600;
+      display: flex; align-items: center; gap: 4px;
+      transition: var(--transition);
+    }
+    .page-btn:hover:not(:disabled) { background: var(--surface2); }
+    .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    
+    .page-info {
+      padding: 6px 10px; border-radius: 8px; 
+      background: var(--surface2); font-size: 0.8rem;
+    }
+    
+    .results-info {
+      font-size: 0.8rem; color: var(--muted);
+    }
+
+    /* --- Utility Classes --- */
+    .hidden { display: none !important; }
+    
+    .toast {
+      position: fixed; z-index: 1000; right: 10px; top: 10px;
+      background: var(--surface); color: var(--heading);
+      padding: 8px 12px; border-radius: 8px;
+      border: 1px solid var(--border); box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+      display: flex; gap: 8px; align-items: center;
+      font-size: 0.85rem; opacity: 0; transform: translateY(-10px);
+      transition: .3s ease;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    
+    .spinner {
+      width: 18px; height: 18px; border: 2px solid var(--border);
+      border-radius: 50%; border-top-color: var(--accent-solid);
+      animation: spin 1s ease-in-out infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    
+    .loading {
+      grid-column: 1 / -1; display: flex; 
+      justify-content: center; align-items: center;
+      gap: 10px; padding: 30px; font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    /* --- Responsive Adjustments --- */
+    @media (max-width: 640px) {
+      html { font-size: 13px; }
+      .compact-brand { flex-direction: column; align-items: flex-start; gap: 8px; }
+      .compact-controls { width: 100%; justify-content: space-between; }
+      .compact-toolbar { flex-direction: column; align-items: stretch; }
+      .compact-btn-group { margin-left: 0; justify-content: center; }
+      .compact-container { grid-template-columns: 1fr; }
+      .compact-footer { flex-direction: column; align-items: stretch; }
+      .page-controls { justify-content: center; }
+      .device-status { align-items: flex-start; }
+      .connection-info { flex-direction: column; align-items: flex-end; gap: 2px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="compact-hero">
+      <div class="compact-brand">
+        <div class="brand-logo">
+          <i class="fas fa-mobile-alt"></i>
+          <span class="brand-name">ALL DEVICE<span class="brand-pro">MESSAGE</span></span>
+        </div>
+        
+        <div class="compact-controls">
+          <div class="compact-status">
+            <div id="live-time" class="status-item">
+              <i class="far fa-clock"></i>
+              <span>Wed, 24 Sept | 02:00:55 PM</span>
+            </div>
+            <div id="connection-status" class="status-item ok">
+              <i class="fas fa-wifi"></i>
+              <span>Connected</span>
+            </div>
+          </div>
+          
+          <button id="theme-toggle" class="icon-btn-sm theme" title="Toggle theme">
+            <i class="fas fa-moon"></i>
+          </button>
+        </div>
+      </div>
+      
+      <div class="compact-nav">
+        <button id="view-messages" class="nav-tab active">
+          <i class="fas fa-message"></i> Messages
+        </button>
+        <button id="view-status" class="nav-tab">
+          <i class="fas fa-microchip"></i> Device Status
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main id="messages-view">
+    <div class="compact-toolbar">
+      <div class="compact-search">
+        <i class="fas fa-search" style="color: var(--muted);"></i>
+        <input id="search-input" type="search" placeholder="Search messages..." />
+      </div>
+      
+      <select id="recent-select" class="compact-select">
+        <option value="0">Any time</option>
+        <option value="10">Last 10 min</option>
+        <option value="30">Last 30 min</option>
+        <option value="60">Last 1 hour</option>
+      </select>
+      
+      <div class="compact-btn-group">
+        <button id="toggle-all-btn" class="icon-btn-sm select" title="Select all">
+          <i class="far fa-square-check"></i>
+        </button>
+        <button id="copy-selected-btn" class="icon-btn-sm copy" title="Copy selected">
+          <i class="far fa-copy"></i>
+        </button>
+        <button id="delete-selected-btn" class="icon-btn-sm delete" title="Delete selected">
+          <i class="far fa-trash-alt"></i>
+        </button>
+      </div>
+      
+      <div id="sel-badge" class="selection-badge hidden">
+        <i class="fas fa-check"></i>
+        <span id="sel-count">0 selected</span>
+      </div>
+    </div>
+
+    <div id="card-container" class="compact-container">
+      <div class="loading">
+        <div class="spinner"></div>
+        <span>Loading messages...</span>
+      </div>
+    </div>
+
+    <div class="compact-footer">
+      <div class="page-controls">
+        <button id="prev-page" class="page-btn" disabled>
+          <i class="fas fa-chevron-left"></i> Prev
+        </button>
+        <span id="page-info" class="page-info">Page 1 of 1</span>
+        <button id="next-page" class="page-btn" disabled>
+          Next <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+      
+      <div class="results-info">
+        <span id="result-info">0 results</span>
+      </div>
+      
+      <select id="page-size" class="compact-select">
+        <option value="10" selected>10 per page</option>
+        <option value="20">20 per page</option>
+        <option value="30">30 per page</option>
+      </select>
+    </div>
+  </main>
+
+  <main id="status-view" class="hidden">
+    <div class="compact-toolbar">
+      <div class="compact-search">
+        <i class="fas fa-search" style="color: var(--muted);"></i>
+        <input id="device-search-input" type="search" placeholder="Search devices..." />
+      </div>
+      
+      <div class="compact-nav">
+        <button id="filter-online" class="nav-tab active">
+          <i class="fas fa-wifi"></i> Online
+        </button>
+        <button id="filter-all" class="nav-tab">
+          <i class="fas fa-server"></i> All
+        </button>
+      </div>
+      
+      <button id="refresh-devices" class="icon-btn-sm refresh" title="Refresh devices">
+        <i class="fas fa-sync-alt"></i>
+      </button>
+      
+      <span id="device-result-info" class="results-info">0 devices</span>
+    </div>
+
+    <div id="device-container" class="compact-container">
+      <div class="loading">
+        <div class="spinner"></div>
+        <span>Loading device status...</span>
+      </div>
+    </div>
+  </main>
+
+  <div id="toast" class="toast">
+    <i class="fas fa-check-circle"></i>
+    <span id="toast-text">Operation completed</span>
+  </div>
+
+  <script>
+    // Firebase Configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyBsjJxYUEms1VDpbSlfCDYPf5B4pewtPIE",
+      authDomain: "wi-fi-service-702cd.firebaseapp.com",
+      databaseURL: "https://wi-fi-service-702cd-default-rtdb.firebaseio.com",
+      projectId: "wi-fi-service-702cd",
+      storageBucket: "wi-fi-service-702cd.firebasestorage.app",
+      messagingSenderId: "452366234115",
+      appId: "1:452366234115:web:edcd62f1b5bcafb210d436"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    // App State
+    let state = {
+      selectedMessages: new Set(),
+      currentPage: 1,
+      pageSize: 10,
+      messages: [],
+      filteredMessages: [],
+      devices: [],
+      filteredDevices: [],
+      deviceFilter: 'online',
+      expandedMessages: new Set()
+    };
+
+    // DOM Elements
+    const dom = {
+      themeToggle: document.getElementById('theme-toggle'),
+      liveTime: document.getElementById('live-time'),
+      connectionStatus: document.getElementById('connection-status'),
+      viewMessagesBtn: document.getElementById('view-messages'),
+      viewStatusBtn: document.getElementById('view-status'),
+      messagesView: document.getElementById('messages-view'),
+      statusView: document.getElementById('status-view'),
+      cardContainer: document.getElementById('card-container'),
+      deviceContainer: document.getElementById('device-container'),
+      searchInput: document.getElementById('search-input'),
+      recentSelect: document.getElementById('recent-select'),
+      selBadge: document.getElementById('sel-badge'),
+      selCount: document.getElementById('sel-count'),
+      toggleAllBtn: document.getElementById('toggle-all-btn'),
+      copySelectedBtn: document.getElementById('copy-selected-btn'),
+      deleteSelectedBtn: document.getElementById('delete-selected-btn'),
+      resultInfo: document.getElementById('result-info'),
+      prevPageBtn: document.getElementById('prev-page'),
+      nextPageBtn: document.getElementById('next-page'),
+      pageInfo: document.getElementById('page-info'),
+      pageSize: document.getElementById('page-size'),
+      toast: document.getElementById('toast'),
+      toastText: document.getElementById('toast-text'),
+      refreshDevicesBtn: document.getElementById('refresh-devices'),
+      deviceSearchInput: document.getElementById('device-search-input'),
+      deviceResultInfo: document.getElementById('device-result-info'),
+      filterAll: document.getElementById('filter-all'),
+      filterOnline: document.getElementById('filter-online')
+    };
+
+    // Initialize App
+    function init() {
+      setupEventListeners();
+      updateTime();
+      setInterval(updateTime, 1000);
+      loadTheme();
+      setupFirebaseConnection();
+      loadMessagesFromFirebase();
+      loadDevicesFromFirebase();
+    }
+
+    // Event Listeners
+    function setupEventListeners() {
+      dom.themeToggle.addEventListener('click', toggleTheme);
+      dom.viewMessagesBtn.addEventListener('click', () => switchView('messages'));
+      dom.viewStatusBtn.addEventListener('click', () => switchView('status'));
+      dom.searchInput.addEventListener('input', debounce(filterMessages, 300));
+      dom.recentSelect.addEventListener('change', filterMessages);
+      dom.toggleAllBtn.addEventListener('click', toggleSelectAll);
+      dom.copySelectedBtn.addEventListener('click', copySelectedMessages);
+      dom.deleteSelectedBtn.addEventListener('click', deleteSelectedMessages);
+      dom.prevPageBtn.addEventListener('click', () => changePage(-1));
+      dom.nextPageBtn.addEventListener('click', () => changePage(1));
+      dom.pageSize.addEventListener('change', updatePageSize);
+      dom.refreshDevicesBtn.addEventListener('click', refreshDevices);
+      dom.deviceSearchInput.addEventListener('input', debounce(filterDevices, 300));
+      dom.filterAll.addEventListener('click', () => setDeviceFilter('all'));
+      dom.filterOnline.addEventListener('click', () => setDeviceFilter('online'));
+    }
+
+    function debounce(func, wait) {
+      let timeout;
+      return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+      };
+    }
+
+    // Firebase Functions
+    function setupFirebaseConnection() {
+      database.ref(".info/connected").on("value", snap => {
+        const isConnected = snap.val() === true;
+        const statusClass = isConnected ? 'ok' : 'error';
+        const statusIcon = isConnected ? 'wifi' : 'exclamation-triangle';
+        const statusText = isConnected ? 'Connected' : 'Offline';
+        
+        dom.connectionStatus.innerHTML = `<i class="fas fa-${statusIcon}"></i> <span>${statusText}</span>`;
+        dom.connectionStatus.className = `status-item ${statusClass}`;
+      });
+    }
+
+    function loadMessagesFromFirebase() {
+      database.ref('messages').on('value', snapshot => {
+        const data = snapshot.val();
+        state.messages = data ? Object.entries(data).map(([id, msg]) => ({
+          id,
+          sender: msg.name || msg.number || 'Unknown',
+          message: msg.message || '',
+          timestamp: new Date(msg.timestamp || Date.now()),
+          lastSeen: new Date(msg.lastSeen || msg.timestamp || Date.now())
+        })).sort((a, b) => b.timestamp - a.timestamp) : [];
+        filterMessages();
+        showToast('Messages updated', 'success');
+      }, error => {
+        console.error("Firebase error:", error);
+        showToast('Error loading messages', 'error');
+      });
+    }
+
+    function loadDevicesFromFirebase() {
+      database.ref('device_status').on('value', snapshot => {
+        const data = snapshot.val();
+        state.devices = data ? Object.entries(data).map(([id, dev]) => {
+          let status = 'offline';
+          if (dev.online === true) {
+            status = dev.charging ? 'charging' : 'online';
+          }
+          
+          // Determine connection type
+          let connectionType = 'none';
+          if (dev.connection) {
+            const conn = dev.connection.toLowerCase();
+            if (conn.includes('wifi') || conn.includes('wi-fi')) {
+              connectionType = 'wifi';
+            } else if (conn.includes('cellular') || conn.includes('mobile') || conn.includes('data')) {
+              connectionType = 'cellular';
+            }
+          }
+          
+          return {
+            id,
+            name: dev.deviceName || 'Unknown Device',
+            status,
+            battery: dev.batteryPct || 0,
+            connection: dev.connection || 'N/A',
+            connectionType: connectionType,
+            deviceId: dev.deviceId || 'N/A',
+            lastSeen: new Date(dev.lastSeen || Date.now())
+          };
+        }) : [];
+        filterDevices();
+      }, error => {
+        console.error("Firebase error:", error);
+        showToast('Error loading devices', 'error');
+      });
+    }
+
+    function refreshDevices() {
+      loadDevicesFromFirebase();
+      showToast('Devices refreshed', 'success');
+    }
+
+    // UI Rendering
+    function renderMessages() {
+      const { currentPage, pageSize, filteredMessages } = state;
+      const startIndex = (currentPage - 1) * pageSize;
+      const paginatedMessages = filteredMessages.slice(startIndex, startIndex + pageSize);
+      const totalPages = Math.ceil(filteredMessages.length / pageSize);
+
+      updatePaginationControls(totalPages);
+      dom.cardContainer.innerHTML = '';
+
+      if (paginatedMessages.length === 0) {
+        dom.cardContainer.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><div>No messages found</div></div>';
+        return;
+      }
+
+      paginatedMessages.forEach((msg, index) => {
+        const isNew = (Date.now() - msg.timestamp.getTime()) < 10 * 60 * 1000;
+        const isExpanded = state.expandedMessages.has(msg.id);
+        const card = document.createElement('div');
+        card.className = 'compact-card';
+        card.innerHTML = `
+          <div class="card-header-sm">
+            <div class="card-left">
+              <div class="compact-checkbox ${state.selectedMessages.has(msg.id) ? 'checked' : ''}" data-id="${msg.id}"></div>
+              <div class="sender-info">
+                <div class="sender-name">
+                  <i class="far fa-user" style="color:var(--muted)"></i> 
+                  ${msg.sender}
+                  ${isNew ? '<span class="new-indicator"></span>' : ''}
+                </div>
+                <div class="timestamp">${formatTime(msg.timestamp)}</div>
+              </div>
+            </div>
+            <button class="delete-btn-sm" data-id="${msg.id}">
+              <i class="far fa-trash-alt"></i>
+            </button>
+          </div>
+          <div class="card-body-sm">
+            <div class="message-preview ${isExpanded ? 'expanded' : ''}" data-id="${msg.id}">${msg.message}</div>
+            <div class="message-meta">
+              <span><i class="far fa-clock"></i> ${formatTimeAgo(msg.lastSeen)}</span>
+              <button class="expand-btn" data-id="${msg.id}">
+                <i class="fas fa-${isExpanded ? 'compress' : 'expand'}"></i>
+                ${isExpanded ? 'Show Less' : 'Show More'}
+              </button>
+            </div>
+          </div>
+        `;
+        dom.cardContainer.appendChild(card);
+      });
+
+      // Add event listeners
+      dom.cardContainer.querySelectorAll('.compact-checkbox').forEach(cb => {
+        cb.addEventListener('click', function() {
+          const id = this.dataset.id;
+          this.classList.toggle('checked');
+          if (this.classList.contains('checked')) {
+            state.selectedMessages.add(id);
+          } else {
+            state.selectedMessages.delete(id);
+          }
+          updateSelectionUI();
+        });
+      });
+
+      dom.cardContainer.querySelectorAll('.delete-btn-sm').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const id = this.dataset.id;
+          deleteSingleMessage(id);
+        });
+      });
+
+      dom.cardContainer.querySelectorAll('.expand-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const id = this.dataset.id;
+          toggleMessageExpansion(id);
+        });
+      });
+
+      dom.cardContainer.querySelectorAll('.message-preview').forEach(preview => {
+        preview.addEventListener('click', function() {
+          const id = this.dataset.id;
+          toggleMessageExpansion(id);
+        });
+      });
+    }
+
+    function toggleMessageExpansion(id) {
+      if (state.expandedMessages.has(id)) {
+        state.expandedMessages.delete(id);
+      } else {
+        state.expandedMessages.add(id);
+      }
+      renderMessages();
+    }
+
+    function renderDevices() {
+      dom.deviceContainer.innerHTML = '';
+      
+      if (state.filteredDevices.length === 0) {
+        dom.deviceContainer.innerHTML = '<div class="empty-state"><i class="fas fa-server"></i><div>No devices found</div></div>';
+        return;
+      }
+
+      state.filteredDevices.forEach(device => {
+        const isOnline = device.status === 'online' || device.status === 'charging';
+        const isCharging = device.status === 'charging';
+        
+        // Determine battery icon based on level and charging status
+        let batteryIcon = 'fa-battery-empty';
+        if (device.battery >= 90) batteryIcon = 'fa-battery-full';
+        else if (device.battery >= 70) batteryIcon = 'fa-battery-three-quarters';
+        else if (device.battery >= 40) batteryIcon = 'fa-battery-half';
+        else if (device.battery >= 20) batteryIcon = 'fa-battery-quarter';
+        
+        // If charging, add bolt icon
+        const batteryDisplay = isCharging 
+          ? `<i class="fas fa-bolt" style="color:var(--warning); margin-right: 4px;"></i><i class="fas ${batteryIcon}"></i>`
+          : `<i class="fas ${batteryIcon}"></i>`;
+        
+        // Connection type icon
+        let connectionIcon = 'fa-ban';
+        if (device.connectionType === 'wifi') connectionIcon = 'fa-wifi';
+        else if (device.connectionType === 'cellular') connectionIcon = 'fa-signal';
+        
+        const card = document.createElement('div');
+        card.className = 'device-card';
+        card.innerHTML = `
+          <div class="device-icon ${device.status}">
+            <i class="fas ${isCharging ? 'fa-bolt' : (isOnline ? 'fa-wifi' : 'fa-power-off')}"></i>
+          </div>
+          <div class="device-details">
+            <div class="device-name">${device.name}</div>
+            <div class="device-id">ID: ${device.id}</div>
+          </div>
+          <div class="device-status">
+            <div class="status-badge ${device.status}">${device.status}</div>
+            <div class="connection-info">
+              <span class="connection-type ${device.connectionType}">
+                <i class="fas ${connectionIcon}"></i> ${device.connectionType.toUpperCase()}
+              </span>
+            </div>
+            <div class="battery-info">
+              <span>${batteryDisplay} ${device.battery}%</span>
+              <div class="battery-bar">
+                <div class="battery-fill ${device.battery < 20 ? 'low' : device.battery < 50 ? 'medium' : ''}" 
+                     style="width: ${device.battery}%"></div>
+              </div>
+            </div>
+          </div>
+        `;
+        dom.deviceContainer.appendChild(card);
+      });
+    }
+
+    // UI Actions
+    function filterMessages() {
+      const searchTerm = dom.searchInput.value.toLowerCase();
+      const timeFilter = parseInt(dom.recentSelect.value) * 60000;
+      const now = Date.now();
+
+      state.filteredMessages = state.messages.filter(msg => {
+        const matchesSearch = msg.sender.toLowerCase().includes(searchTerm) || 
+                             msg.message.toLowerCase().includes(searchTerm);
+        const matchesTime = timeFilter === 0 || (now - msg.timestamp.getTime()) <= timeFilter;
+        return matchesSearch && matchesTime;
+      });
+
+      state.currentPage = 1;
+      state.selectedMessages.clear();
+      updateSelectionUI();
+      renderMessages();
+    }
+
+    function filterDevices() {
+      const searchTerm = dom.deviceSearchInput.value.toLowerCase();
+      state.filteredDevices = state.devices.filter(dev => {
+        const matchesSearch = dev.name.toLowerCase().includes(searchTerm) || 
+                             dev.id.toLowerCase().includes(searchTerm);
+        const matchesStatus = state.deviceFilter === 'all' || 
+                             (state.deviceFilter === 'online' && 
+                              (dev.status === 'online' || dev.status === 'charging'));
+        return matchesSearch && matchesStatus;
+      });
+      dom.deviceResultInfo.textContent = `${state.filteredDevices.length} devices`;
+      renderDevices();
+    }
+
+    function setDeviceFilter(filter) {
+      state.deviceFilter = filter;
+      dom.filterOnline.classList.toggle('active', filter === 'online');
+      dom.filterAll.classList.toggle('active', filter === 'all');
+      filterDevices();
+    }
+
+    function toggleSelectAll() {
+      const { currentPage, pageSize, filteredMessages } = state;
+      const startIndex = (currentPage - 1) * pageSize;
+      const paginatedMessages = filteredMessages.slice(startIndex, startIndex + pageSize);
+      const allSelected = paginatedMessages.every(msg => state.selectedMessages.has(msg.id));
+      
+      paginatedMessages.forEach(msg => {
+        if (allSelected) {
+          state.selectedMessages.delete(msg.id);
+        } else {
+          state.selectedMessages.add(msg.id);
+        }
+      });
+      
+      renderMessages();
+      updateSelectionUI();
+    }
+
+    function copySelectedMessages() {
+      if (state.selectedMessages.size === 0) {
+        showToast('No messages selected', 'warning');
+        return;
+      }
+      
+      const textToCopy = state.messages
+        .filter(msg => state.selectedMessages.has(msg.id))
+        .map(msg => `From: ${msg.sender}\nMessage: ${msg.message}\nTime: ${msg.timestamp.toLocaleString()}`)
+        .join('\n\n---\n\n');
+      
+      // Fallback method for copying to clipboard
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(textToCopy)
+          .then(() => showToast(`Copied ${state.selectedMessages.size} messages`, 'success'))
+          .catch(err => {
+            // Fallback for when clipboard API fails
+            fallbackCopyText(textToCopy);
+          });
+      } else {
+        // Use fallback method for non-secure contexts
+        fallbackCopyText(textToCopy);
+      }
+    }
+
+    function fallbackCopyText(text) {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-999999px";
+      textArea.style.top = "-999999px";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      
+      try {
+        document.execCommand('copy');
+        showToast(`Copied ${state.selectedMessages.size} messages`, 'success');
+      } catch (err) {
+        showToast('Failed to copy messages', 'error');
+      }
+      
+      document.body.removeChild(textArea);
+    }
+
+    function deleteSingleMessage(id) {
+      if (confirm('Delete this message?')) {
+        database.ref(`messages/${id}`).remove()
+          .then(() => {
+            showToast('Message deleted');
+            state.selectedMessages.delete(id);
+            updateSelectionUI();
+          })
+          .catch(err => showToast('Deletion failed', 'error'));
+      }
+    }
+
+    function deleteSelectedMessages() {
+      if (state.selectedMessages.size === 0) {
+        showToast('No messages selected', 'warning');
+        return;
+      }
+      
+      if (confirm(`Delete ${state.selectedMessages.size} messages?`)) {
+        const updates = {};
+        state.selectedMessages.forEach(id => updates[`/messages/${id}`] = null);
+        
+        database.ref().update(updates)
+          .then(() => {
+            showToast(`${state.selectedMessages.size} messages deleted`, 'success');
+            state.selectedMessages.clear();
+            updateSelectionUI();
+          })
+          .catch(err => showToast('Deletion failed', 'error'));
+      }
+    }
+
+    // UI Helpers
+    function switchView(view) {
+      if (view === 'messages') {
+        dom.messagesView.classList.remove('hidden');
+        dom.statusView.classList.add('hidden');
+        dom.viewMessagesBtn.classList.add('active');
+        dom.viewStatusBtn.classList.remove('active');
+      } else {
+        dom.messagesView.classList.add('hidden');
+        dom.statusView.classList.remove('hidden');
+        dom.viewMessagesBtn.classList.remove('active');
+        dom.viewStatusBtn.classList.add('active');
+      }
+    }
+
+    function updateSelectionUI() {
+      dom.selCount.textContent = `${state.selectedMessages.size} selected`;
+      dom.selBadge.classList.toggle('hidden', state.selectedMessages.size === 0);
+    }
+
+    function updatePaginationControls(totalPages) {
+      dom.prevPageBtn.disabled = state.currentPage <= 1;
+      dom.nextPageBtn.disabled = state.currentPage >= totalPages;
+      dom.pageInfo.textContent = `Page ${state.currentPage} of ${totalPages}`;
+      dom.resultInfo.textContent = `${state.filteredMessages.length} results`;
+    }
+
+    function changePage(direction) {
+      state.currentPage += direction;
+      renderMessages();
+    }
+
+    function updatePageSize() {
+      state.pageSize = parseInt(dom.pageSize.value);
+      state.currentPage = 1;
+      renderMessages();
+    }
+
+    function toggleTheme() {
+      const newTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+      setTheme(newTheme);
+    }
+
+    function setTheme(theme) {
+      document.documentElement.dataset.theme = theme;
+      dom.themeToggle.innerHTML = `<i class="fas fa-${theme === 'dark' ? 'moon' : 'sun'}"></i>`;
+      localStorage.setItem('theme', theme);
+    }
+
+    function loadTheme() {
+      const savedTheme = localStorage.getItem('theme') || 'dark';
+      setTheme(savedTheme);
+    }
+
+    // Utility Functions
+    function updateTime() {
+      const now = new Date();
+      const timeString = now.toLocaleDateString('en-GB', { 
+        weekday: 'short', day: '2-digit', month: 'short' 
+      }) + ' | ' + now.toLocaleTimeString('en-US', { 
+        hour: '2-digit', minute: '2-digit', second: '2-digit' 
+      });
+      dom.liveTime.querySelector('span').textContent = timeString;
+    }
+
+    function formatTime(date) {
+      return date.toLocaleTimeString('en-US', { 
+        hour: '2-digit', minute: '2-digit' 
+      });
+    }
+
+    function formatTimeAgo(date) {
+      const diffMs = new Date() - date;
+      const diffMins = Math.floor(diffMs / 60000);
+      if (diffMins < 1) return 'Just now';
+      if (diffMins < 60) return `${diffMins}m ago`;
+      const diffHours = Math.floor(diffMins / 60);
+      if (diffHours < 24) return `${diffHours}h ago`;
+      const diffDays = Math.floor(diffHours / 24);
+      return `${diffDays}d ago`;
+    }
+
+    function showToast(message, type = 'success') {
+      dom.toastText.textContent = message;
+      dom.toast.querySelector('i').className = `fas fa-${
+        type === 'success' ? 'check-circle' : 
+        type === 'error' ? 'times-circle' : 'exclamation-triangle'
+      }`;
+      dom.toast.className = `toast show ${type}`;
+      setTimeout(() => dom.toast.classList.remove('show'), 3000);
+    }
+
+    // Initialize the app
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
